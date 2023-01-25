@@ -48,7 +48,7 @@ class Bullet:
         pg.draw.circle(screen, pg.Color(255, 0, 0), (self.x, self.y), 3)
 
     def attack(self, boss):
-        boss_pos = boss.getPos()
+        boss_pos = boss.get_pos()
         boss_x1 = boss_pos[0]
         boss_x2 = boss_pos[2]
         boss_y1 = boss_pos[1]

@@ -5,7 +5,7 @@ import time
 import sys
 import os
 import main
-from PyQt5 import uic, QtCore
+from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
 
@@ -19,16 +19,16 @@ class Boss:
         self.hp = hp
 
     def render(self, screen):
-        pg.draw.rect(screen, pg.Color(79,0,20), (self.pos_x, self.pos_y, self.size_x, self.size_y))
+        pg.draw.rect(screen, pg.Color(79, 0, 20), (self.pos_x, self.pos_y, self.size_x, self.size_y))
 
     def health(self, attack, screen):
         self.hp -= attack
         pg.draw.rect(screen, pg.Color(100, 21, 43), (self.pos_x, self.pos_y, self.size_x, self.size_y))
 
-    def getPosForAttack(self):
+    def get_pos_for_attack(self):
         return self.pos_x, self.pos_y, self.size_x, self.size_y
 
-    def getHealth(self):
+    def get_health(self):
         return self.hp
 
 
@@ -60,13 +60,13 @@ class Enemy:
             self.y -= self.speed
 
     def render(self, screen):
-        #pg.draw.rect(screen, pg.Color(79,0,20), (self.x, self.y, self.weight, self.height))
+        # pg.draw.rect(screen, pg.Color(79,0,20), (self.x, self.y, self.weight, self.height))
         pass
 
-    def getPosForAttack(self):
+    def get_pos_for_attack(self):
         return self.x, self.y, self.weight, self.height
 
-    def getHealth(self):
+    def get_health(self):
         return self.hp
 
     def health(self, attack, screen):
@@ -115,7 +115,7 @@ class Bullet:
         pg.draw.circle(screen, pg.Color(255, 0, 0), (self.x, self.y), 3)
 
     def attack(self, unit):
-        unit_pos = unit.getPosForAttack()
+        unit_pos = unit.get_pos_for_attack()
         unit_x1 = unit_pos[0]
         unit_x2 = unit_pos[2]
         unit_y1 = unit_pos[1]
@@ -124,8 +124,8 @@ class Bullet:
             unit.health(50, self.screen)
             return 1
 
-    def getPos(self):
-        return (self.x, self.y)
+    def get_pos(self):
+        return self.x, self.y
 
 
 class Player:
@@ -142,7 +142,7 @@ class Player:
         self.hp = 1000
 
     def render(self, screen):
-        #pg.draw.rect(screen, pg.Color(0, 0, 0), (self.pos_x, self.pos_y, self.weight, self.height))
+        # pg.draw.rect(screen, pg.Color(0, 0, 0), (self.pos_x, self.pos_y, self.weight, self.height))
         pass
 
     def move(self, key, size, endgame):
@@ -171,43 +171,45 @@ class Player:
             self.pos_y = 0
         if self.pos_x + self.weight + 2 > size[0] and endgame:
             self.pos_x = size[0] - self.weight + 2
-        if self.pos_x + self.weight + 2 > size[0] and not(endgame):
+        if self.pos_x + self.weight + 2 > size[0] and not endgame:
             self.pos_x = size[0] - self.weight
         if self.pos_y + self.height > size[1]:
             self.pos_y = size[1] - self.height
 
-    def openCase(self, case):
+    def open_case(self, case):
         if len(case) > 0:
             for xy in case:
                 x = xy[0]
                 y = xy[1]
-                if (self.pos_x - 30 <= x and self.pos_x + 60 >= x) and (self.pos_y - 30 <= y and self.pos_y + 30 >= y):
-                    self.setAmmo(20)
+                if (self.pos_x - 30 <= x <= self.pos_x + 60) and (self.pos_y - 30 <= y <= self.pos_y + 30):
+                    self.set_ammo(20)
                     case.remove(xy)
 
-    def getHealth(self):
+    def get_health(self):
         return self.hp
 
     def health(self, attack, screen):
         self.hp -= attack
 
-    def getPos(self):
-        return (self.pos_x, self.pos_y)
+    def get_pos(self):
+        return self.pos_x, self.pos_y
 
-    def getPosForAttack(self):
+    def get_pos_for_attack(self):
         return self.pos_x, self.pos_y, self.weight, self.height
 
-    def getAmmo(self):
-        return (self.ammo)
+    def get_ammo(self):
+        return self.ammo
 
-    def setAmmo(self, ammo):
+    def set_ammo(self, ammo):
         self.ammo += ammo
 
-    def goOut(self, size, screen, level):
-        if not(size[0] - size[0] // 65 <= self.pos_x <= size[0] - size[0] // 65 + size[0] // 65 and size[1] // 4 <= self.pos_y <= size[1] // 4 + size[1] // 2):
+    def go_out(self, size, screen, level):
+        if not (size[0] - size[0] // 65 <= self.pos_x <= size[0] - size[0] // 65 + size[0] // 65 and
+                size[1] // 4 <= self.pos_y <= size[1] // 4 + size[1] // 2):
             self.start_time = time.time()
 
-        if size[0] - size[0] // 65 <= self.pos_x <= size[0] - size[0] // 65 + size[0] // 65 and size[1] // 4 <= self.pos_y <= size[1] // 4 + size[1] // 2:
+        if size[0] - size[0] // 65 <= self.pos_x <= size[0] - size[0] // 65 + size[0] // 65 and \
+                size[1] // 4 <= self.pos_y <= size[1] // 4 + size[1] // 2:
             f = pg.font.Font(None, 100)
             self.ost_time = round(10 - (time.time() - self.start_time), 1)
             if self.ost_time < 0.1:
@@ -215,7 +217,7 @@ class Player:
             text = f.render(f'{self.ost_time} Выход с локации', True, (0, 200, 0))
             screen.blit(text, (size[0] // 3, size[1] // 2))
             if self.ost_time <= 0:
-                text = f.render(f'{self.ost_time} Выход с локации', True, (0, 200, 0))
+                f.render(f'{self.ost_time} Выход с локации', True, (0, 200, 0))
                 main(level + 1)
 
 
@@ -224,7 +226,8 @@ class Field:
         self.height = size[1]
         self.weight = size[0]
         self.size = size
-        self.plates = [(random.randint(0, size[0]), random.randint(0, size[1]), random.randint(1, 100), random.randint(1, 100)) for _ in range(100)]
+        self.plates = [(random.randint(0, size[0]), random.randint(0, size[1]),
+                        random.randint(1, 100), random.randint(1, 100)) for _ in range(100)]
         self.cases = [
             (random.randint(0, size[0]), random.randint(0, size[1]), 30, 30) for _ in range(random.randint(5, 15))]
 
@@ -233,12 +236,12 @@ class Field:
         for plate in self.plates:
             pg.draw.rect(screen, pg.Color(100, 100, 100), plate)
         for case in self.cases:
-            pg.draw.rect(screen, pg.Color(121,85,61), case)
+            pg.draw.rect(screen, pg.Color(121, 85, 61), case)
 
         if len(self.cases) == 0:
             self.cases.append((random.randint(0, self.size[0]), random.randint(0, self.size[1]), 30, 30))
 
-    def sendCases(self):
+    def send_cases(self):
         return self.cases
 
 
@@ -255,16 +258,17 @@ class EndGame:
 
 class UI:
     def __init__(self, player, boss):
-        self.player_hp = player.getHealth()
-        self.boss_hp = boss.getHealth()
+        self.player_hp = player.get_health()
+        self.boss_hp = boss.get_health()
+        self.player_ammo = None
 
     def render(self, player, boss, screen, size):
-        self.player_hp = player.getHealth()
-        self.player_ammo = player.getAmmo()
+        self.player_hp = player.get_health()
+        self.player_ammo = player.get_ammo()
         if boss == 0:
             self.boss_hp = 0
         else:
-            self.boss_hp = boss.getHealth()
+            self.boss_hp = boss.get_health()
 
         f = pg.font.Font(None, 30)
         text = f.render(f'Осталось здоровья: {self.player_hp}', True, (0, 200, 0))
@@ -276,7 +280,7 @@ class UI:
         screen.blit(text, (size[0] - size[0] // 5, size[1] // 10))
 
 
-def load_image(name, colorkey=None):
+def load_image(name):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
     if not os.path.isfile(fullname):
@@ -311,7 +315,6 @@ def main(level):
     bosses = [boss]
     enemies = []
 
-    down = False
     key = []
     bullets = []
     enemy_bullets = []
@@ -319,10 +322,10 @@ def main(level):
     ui = UI(player, boss)
 
     while running:
-        if player.getHealth() <= 0:
+        if player.get_health() <= 0:
             players = []
         if len(players) > 0:
-            player_sprite.rect.x, player_sprite.rect.y = player.getPos()[0], player.getPos()[1]
+            player_sprite.rect.x, player_sprite.rect.y = player.get_pos()[0], player.get_pos()[1]
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -337,11 +340,11 @@ def main(level):
                     key.remove(event.key)
 
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    if event.button == 1 and player.getAmmo() > 0:
-                        bullet = Bullet(player.getPos(), screen)
+                    if event.button == 1 and player.get_ammo() > 0:
+                        bullet = Bullet(player.get_pos(), screen)
                         bullet.spawn(event.pos[0], event.pos[1])
                         bullets.append(bullet)
-                        player.setAmmo(-1)
+                        player.set_ammo(-1)
 
             field.render(screen)
             player.render(screen)
@@ -353,37 +356,37 @@ def main(level):
 
             for enemy in enemies:
                 enemy_sprite = enemy.get_sprite()
-                enemy_sprite.rect.x, enemy_sprite.rect.y = enemy.getPosForAttack()[0], enemy.getPosForAttack()[1]
-                if enemy.getPosForAttack()[1] <= 0:
+                enemy_sprite.rect.x, enemy_sprite.rect.y = enemy.get_pos_for_attack()[0], enemy.get_pos_for_attack()[1]
+                if enemy.get_pos_for_attack()[1] <= 0:
                     enemy.spawn(size)
                 else:
                     enemy.move(size)
                     if enemy.get_attack() == 0:
-                        enemy_bullet = Bullet((enemy.getPosForAttack()[0], enemy.getPosForAttack()[1]), screen)
-                        enemy_bullet.spawn(player.getPosForAttack()[0], player.getPosForAttack()[1])
+                        enemy_bullet = Bullet((enemy.get_pos_for_attack()[0], enemy.get_pos_for_attack()[1]), screen)
+                        enemy_bullet.spawn(player.get_pos_for_attack()[0], player.get_pos_for_attack()[1])
                         enemy_bullets.append(enemy_bullet)
                 enemy.render(screen)
 
                 all_sprites.update()
-                if enemy.getHealth() <= 0:
+                if enemy.get_health() <= 0:
                     enemy_sprite.rect.x, enemy_sprite.rect.y = -1000, -1000
                     enemies.remove(enemy)
 
             for boss in bosses:
-                    boss_sprite.rect.x, boss_sprite.rect.y = boss.getPosForAttack()[0], boss.getPosForAttack()[1]
-                    boss.render(screen)
-                    if boss.getHealth() <= 0:
-                        bosses.remove(boss)
-                        boss_sprite.rect.x, boss_sprite.rect.y = -1000, -1000
-                    else:
-                        enemy_bullet = Bullet((boss.getPosForAttack()[0] + boss.getPosForAttack()[2] // 2,
-                                               boss.getPosForAttack()[1] + boss.getPosForAttack()[3] // 2), screen)
-                        enemy_bullet.spawn(player.getPosForAttack()[0], player.getPosForAttack()[1])
-                        enemy_bullets.append(enemy_bullet)
+                boss_sprite.rect.x, boss_sprite.rect.y = boss.get_pos_for_attack()[0], boss.get_pos_for_attack()[1]
+                boss.render(screen)
+                if boss.get_health() <= 0:
+                    bosses.remove(boss)
+                    boss_sprite.rect.x, boss_sprite.rect.y = -1000, -1000
+                else:
+                    enemy_bullet = Bullet((boss.get_pos_for_attack()[0] + boss.get_pos_for_attack()[2] // 2,
+                                           boss.get_pos_for_attack()[1] + boss.get_pos_for_attack()[3] // 2), screen)
+                    enemy_bullet.spawn(player.get_pos_for_attack()[0], player.get_pos_for_attack()[1])
+                    enemy_bullets.append(enemy_bullet)
             if len(bosses) == 0:
                 endgame = EndGame(size)
                 endgame.render(screen)
-                player.goOut(size, screen, level)
+                player.go_out(size, screen, level)
                 MyWidget()
 
             if key:
@@ -393,7 +396,7 @@ def main(level):
                     endgame = False
                 player.move(key, size, endgame)
                 if key[0] == 101:
-                    player.openCase(field.sendCases())
+                    player.open_case(field.send_cases())
 
             for enemy_bullet in enemy_bullets:
                 enemy_bullet.render(screen)
@@ -412,7 +415,7 @@ def main(level):
                         except ValueError:
                             pass
 
-                xy = bullet.getPos()
+                xy = bullet.get_pos()
                 x = xy[0]
                 y = xy[1]
                 if x < 0 or x > size[0] or y < 0 or y > size[1]:
