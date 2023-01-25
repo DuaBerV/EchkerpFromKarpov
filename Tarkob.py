@@ -145,25 +145,20 @@ class Player:
         # pg.draw.rect(screen, pg.Color(0, 0, 0), (self.pos_x, self.pos_y, self.weight, self.height))
         pass
 
-    def move(self, key, size, endgame):
-        if 1073742049 in key:
+    def move(self, keys, size, endgame):
+        if keys[pg.K_LSHIFT]:
             self.speed = 5
-        if 1073742049 not in key:
+        else:
             self.speed = 3
 
-        for movement in key:
-            'S'
-            if movement == 119:
-                self.pos_y -= self.speed
-            'W'
-            if movement == 115:
-                self.pos_y += self.speed
-            'A'
-            if movement == 97:
-                self.pos_x -= self.speed
-            'D'
-            if movement == 100:
-                self.pos_x += self.speed
+        if keys[pg.K_w]:
+            self.pos_y -= self.speed
+        if keys[pg.K_s]:
+            self.pos_y += self.speed
+        if keys[pg.K_d]:
+            self.pos_x += self.speed
+        if keys[pg.K_a]:
+            self.pos_x -= self.speed
 
         if self.pos_x < 0:
             self.pos_x = 0
@@ -292,6 +287,8 @@ def load_image(name):
 
 def main(level):
     pg.init()
+    clock = pg.time.Clock()
+    FPS = 100
     size = (1920, 1080)
     screen = pg.display.set_mode(size)
     pg.display.set_caption("Эщкерп пром Карков")
@@ -326,18 +323,15 @@ def main(level):
             players = []
         if len(players) > 0:
             player_sprite.rect.x, player_sprite.rect.y = player.get_pos()[0], player.get_pos()[1]
+            keys = pg.key.get_pressed()
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
 
                 if event.type == pg.KEYDOWN:
-                    key.append(event.key)
-                    if event.key == 112:
+                    if event.key == pg.K_p:
                         sys.exit()
-
-                if event.type == pg.KEYUP:
-                    key.remove(event.key)
 
                 if event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1 and player.get_ammo() > 0:
@@ -389,14 +383,13 @@ def main(level):
                 player.go_out(size, screen, level)
                 MyWidget()
 
-            if key:
-                if len(bosses) == 0:
-                    endgame = True
-                else:
-                    endgame = False
-                player.move(key, size, endgame)
-                if key[0] == 101:
-                    player.open_case(field.send_cases())
+            if len(bosses) == 0:
+                endgame = True
+            else:
+                endgame = False
+            player.move(keys, size, endgame)
+            if keys[pg.K_e]:
+                player.open_case(field.send_cases())
 
             for enemy_bullet in enemy_bullets:
                 enemy_bullet.render(screen)
@@ -445,8 +438,8 @@ def main(level):
                 if event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         main(1)
-
         pg.display.flip()
+        clock.tick(FPS)
 
 
 class MyWidget(QMainWindow):
