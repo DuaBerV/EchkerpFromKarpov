@@ -8,6 +8,7 @@ import main
 from PyQt5 import uic
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
+import sqlite3
 
 
 class Boss:
@@ -198,7 +199,7 @@ class Player:
     def set_ammo(self, ammo):
         self.ammo += ammo
 
-    def go_out(self, size, screen, level):
+    def go_out(self, size, screen, level, name):
         if not (size[0] - size[0] // 65 <= self.pos_x <= size[0] - size[0] // 65 + size[0] // 65 and
                 size[1] // 4 <= self.pos_y <= size[1] // 4 + size[1] // 2):
             self.start_time = time.time()
@@ -213,7 +214,7 @@ class Player:
             screen.blit(text, (size[0] // 3, size[1] // 2))
             if self.ost_time <= 0:
                 f.render(f'{self.ost_time} Выход с локации', True, (0, 200, 0))
-                main(level + 1)
+                main(level + 1, name)
 
 
 class Field:
@@ -285,7 +286,7 @@ def load_image(name):
     return image
 
 
-def main(level):
+def main(level, name):
     pg.init()
     clock = pg.time.Clock()
     FPS = 100
@@ -294,6 +295,7 @@ def main(level):
     pg.display.set_caption("Эщкерп пром Карков")
     field = Field(size)
     level = level
+    name = name
 
     all_sprites = pg.sprite.Group()
     player_sprite = pg.sprite.Sprite()
@@ -331,6 +333,7 @@ def main(level):
 
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_p:
+                        database(name, 'update', level)
                         sys.exit()
 
                 if event.type == pg.MOUSEBUTTONDOWN:
@@ -380,7 +383,7 @@ def main(level):
             if len(bosses) == 0:
                 endgame = EndGame(size)
                 endgame.render(screen)
-                player.go_out(size, screen, level)
+                player.go_out(size, screen, level, name)
                 MyWidget()
 
             if len(bosses) == 0:
@@ -432,14 +435,41 @@ def main(level):
             text = f.render(f'ТЫ ПРОИГРАЛ уровень: {level}', True, (200, 0, 0))
             screen.blit(text, (text.get_rect(center=(size[0] // 2, size[1] // 2))))
             pg.display.flip()
+
             for event in pg.event.get():
-                if event.type == pg.QUIT:
+                if event.type == pg.QUIT or (event.type == pg.MOUSEBUTTONDOWN and event.button == 1):
                     running = False
-                if event.type == pg.MOUSEBUTTONDOWN:
-                    if event.button == 1:
-                        main(1)
+
         pg.display.flip()
         clock.tick(FPS)
+    database(name, 'update', level)
+    main(level, name)
+
+
+def database(name, command, level=1):
+    con = sqlite3.connect("database.db", timeout=10)
+    name = str(name)
+    level = int(level)
+    data = [name, level]
+    command = command
+    cur = con.cursor()
+    res = cur.execute('''SELECT Name, Level FROM records''')
+    res = res.fetchall()[0][1]
+    print(res)
+    if command == 'insert':
+        cur.execute('''INSERT INTO records(Name, Level)
+        VALUES (?, ?)''', data)
+        con.commit()
+    elif command == 'select':
+        res = cur.execute('''SELECT Name, Level FROM records''')
+        return res.fetchall()[0][1]
+
+    elif command == 'update':
+        data = data[::-1]
+        cur.execute('''UPDATE records SET Level = ? WHERE Name = ?''', data)
+    con.commit()
+    con.close()
+
 
 
 class MyWidget(QMainWindow):
@@ -451,12 +481,25 @@ class MyWidget(QMainWindow):
         self.label = QLabel(self)
         self.label.setPixmap(self.pixmap)
 
+        con = sqlite3.connect("database.db")
+        self.con = con
+        cur = con.cursor()
+        res = cur.execute("SELECT Name FROM records")
+        res = res.fetchall()
+        res = [x[0] for x in res]
+        if self.lineEdit_2.text() not in res:
+            database(self.lineEdit_2.text(), 'insert', self.lineEdit.text())
+        else:
+            self.label_4.setText('Максимальный уровень: ' + str(database(self.lineEdit_2.text(), 'select')))
+        con.commit()
+        con.close()
+
         self.pushButton.clicked.connect(self.run)
         self.label.setGeometry(30, 30, 770, 461)
         self.label.resize(730, 430)
 
     def run(self):
-        main(int(self.lineEdit.text()))
+        main(int(self.lineEdit.text()), self.lineEdit_2.text())
         sys.exit()
 
 
