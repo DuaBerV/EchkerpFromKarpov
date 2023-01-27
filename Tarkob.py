@@ -502,6 +502,20 @@ class MyWidget(QMainWindow):
         self.pixmap = QPixmap('EFT.jpg')
         self.label = QLabel(self)
         self.label.setPixmap(self.pixmap)
+
+        con = sqlite3.connect("database.db")
+        self.con = con
+        cur = con.cursor()
+        res = cur.execute("SELECT Name FROM records")
+        res = res.fetchall()
+        res = [x[0] for x in res]
+        if self.lineEdit_2.text() not in res:
+            database(self.lineEdit_2.text(), 'insert', self.lineEdit.text())
+        else:
+            self.label_4.setText('Максимальный уровень: ' + str(database(self.lineEdit_2.text(), 'select')))
+        con.commit()
+        con.close()
+
         self.pushButton.clicked.connect(self.run)
         self.pushButton_2.clicked.connect(self.name)
         self.label.setGeometry(30, 30, 770, 461)
