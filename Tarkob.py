@@ -141,16 +141,20 @@ class Player:
         self.speed = 3
         self.ammo = 20
         self.hp = 1000
+        self.stamina = 1000
 
     def render(self, screen):
         # pg.draw.rect(screen, pg.Color(0, 0, 0), (self.pos_x, self.pos_y, self.weight, self.height))
         pass
 
     def move(self, keys, size, endgame):
-        if keys[pg.K_LSHIFT]:
+        if keys[pg.K_LSHIFT] and self.stamina > 10:
             self.speed = 5
+            self.stamina -= 2
         else:
             self.speed = 3
+            if self.stamina < 1000:
+                self.stamina += 1
 
         if keys[pg.K_w]:
             self.pos_y -= self.speed
@@ -180,6 +184,9 @@ class Player:
                 if (self.pos_x - 30 <= x <= self.pos_x + 60) and (self.pos_y - 30 <= y <= self.pos_y + 30):
                     self.set_ammo(20)
                     case.remove(xy)
+
+    def get_stamina(self):
+        return self.stamina
 
     def get_health(self):
         return self.hp
@@ -255,11 +262,13 @@ class EndGame:
 class UI:
     def __init__(self, player, boss):
         self.player_hp = player.get_health()
+        self.player_stamina = player.get_stamina()
         self.boss_hp = boss.get_health()
         self.player_ammo = None
 
     def render(self, player, boss, screen, size):
         self.player_hp = player.get_health()
+        self.player_stamina = player.get_stamina()
         self.player_ammo = player.get_ammo()
         if boss == 0:
             self.boss_hp = 0
@@ -268,9 +277,16 @@ class UI:
 
         f = pg.font.Font(None, 30)
         text = f.render(f'Осталось здоровья: {self.player_hp}', True, (0, 200, 0))
-        screen.blit(text, (size[0] // 100, size[1] // 10))
+        pg.draw.rect(screen, pg.Color(0, 255, 0), (size[0] // 100, size[1] // 10, self.player_hp // 3, size[1] // 100))
+        #screen.blit(text, (size[0] // 100, size[1] // 10))
+
+        text = f.render(f'Осталось выносливости: {self.player_stamina}', True, (0, 200, 0))
+        pg.draw.rect(screen, pg.Color(219, 197, 0), (size[0] // 100, size[1] // 10 + size[1] // 25,
+                                                   self.player_stamina // 3, size[1] // 100))
+        #screen.blit(text, (size[0] // 100, size[1] // 10 + size[1] // 15))
+
         text = f.render(f'Осталось патрон: {self.player_ammo}', True, (0, 200, 0))
-        screen.blit(text, (size[0] // 100, size[1] // 10 + size[1] // 15))
+        screen.blit(text, (size[0] // 100, size[1] // 10 + (size[1] // 25) * 2))
 
         text = f.render(f'Осталось здоровья босса: {self.boss_hp}', True, (0, 200, 0))
         screen.blit(text, (size[0] - size[0] // 5, size[1] // 10))
@@ -296,6 +312,7 @@ def main(level, name):
     field = Field(size)
     level = level
     name = name
+    end = False
 
     all_sprites = pg.sprite.Group()
     player_sprite = pg.sprite.Sprite()
@@ -333,8 +350,8 @@ def main(level, name):
 
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_p:
-                        database(name, 'update', level)
-                        sys.exit()
+                        running = False
+                        end = True
 
                 if event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1 and player.get_ammo() > 0:
@@ -417,10 +434,6 @@ def main(level, name):
                 if x < 0 or x > size[0] or y < 0 or y > size[1]:
                     if bullet in bullets:
                         bullets.remove(bullet)
-            if len(bosses) != 0:
-                ui.render(player, boss, screen, size)
-            else:
-                ui.render(player, 0, screen, size)
 
             if level == 1:
                 f = pg.font.Font(None, 15)
@@ -429,6 +442,11 @@ def main(level, name):
                 screen.blit(text, (text.get_rect(center=(size[0] // 2, size[1] - size[1] // 10))))
 
             all_sprites.draw(screen)
+
+            if len(bosses) != 0:
+                ui.render(player, boss, screen, size)
+            else:
+                ui.render(player, 0, screen, size)
 
         if len(players) == 0:
             f = pg.font.Font(None, 100)
@@ -443,7 +461,10 @@ def main(level, name):
         pg.display.flip()
         clock.tick(FPS)
     database(name, 'update', level)
-    main(level, name)
+    if not end:
+        main(level, name)
+    else:
+        sys.exit()
 
 
 def database(name, command, level=1):
@@ -454,22 +475,23 @@ def database(name, command, level=1):
     command = command
     cur = con.cursor()
     res = cur.execute('''SELECT Name, Level FROM records''')
-    res = res.fetchall()[0][1]
-    print(res)
+    res = res.fetchall()
     if command == 'insert':
         cur.execute('''INSERT INTO records(Name, Level)
         VALUES (?, ?)''', data)
         con.commit()
     elif command == 'select':
         res = cur.execute('''SELECT Name, Level FROM records''')
-        return res.fetchall()[0][1]
+        res = res.fetchall()
+        for i in res:
+            if i[0] == name:
+                return i[1]
 
     elif command == 'update':
         data = data[::-1]
         cur.execute('''UPDATE records SET Level = ? WHERE Name = ?''', data)
     con.commit()
     con.close()
-
 
 
 class MyWidget(QMainWindow):
@@ -480,7 +502,16 @@ class MyWidget(QMainWindow):
         self.pixmap = QPixmap('EFT.jpg')
         self.label = QLabel(self)
         self.label.setPixmap(self.pixmap)
+        self.pushButton.clicked.connect(self.run)
+        self.pushButton_2.clicked.connect(self.name)
+        self.label.setGeometry(30, 30, 770, 461)
+        self.label.resize(730, 430)
 
+    def run(self):
+        main(int(self.lineEdit.text()), self.lineEdit_2.text())
+        sys.exit()
+
+    def name(self):
         con = sqlite3.connect("database.db")
         self.con = con
         cur = con.cursor()
@@ -493,15 +524,6 @@ class MyWidget(QMainWindow):
             self.label_4.setText('Максимальный уровень: ' + str(database(self.lineEdit_2.text(), 'select')))
         con.commit()
         con.close()
-
-        self.pushButton.clicked.connect(self.run)
-        self.label.setGeometry(30, 30, 770, 461)
-        self.label.resize(730, 430)
-
-    def run(self):
-        main(int(self.lineEdit.text()), self.lineEdit_2.text())
-        sys.exit()
-
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
